@@ -10,11 +10,29 @@ import java.io.File;
 public class mainInterface {
     FileOperation fileOperation=new FileOperation();
     TabPane tabPane=new TabPane();
+
+    private TabData getTabData(Tab tab) {
+        return (TabData) tab.getUserData();
+    }
+
+    private void markTabAsModified(Tab tab) {
+        TabData data = getTabData(tab);
+
+        if (!data.isModified()) {
+            data.setModified(true);
+            tab.setText("* " + tab.getText());
+        }
+    }
+
     private Tab createNewTab() {
         TextArea area = new TextArea();
         Tab tab = new Tab("Untitled");
         tab.setContent(area);
-        tab.setUserData(null);
+        TabData data=new TabData(null);
+        tab.setUserData(data);
+        area.textProperty().addListener((obs,oldTExt,newText)->{
+            markTabAsModified(tab);
+        });
         return tab;
     }
 
@@ -25,12 +43,15 @@ public class mainInterface {
 
     private File getCurrentFile(TabPane tabPane){
         Tab selectedTab=tabPane.getSelectionModel().getSelectedItem();
-        return (File) selectedTab.getUserData();
+        TabData data=(TabData) selectedTab.getUserData();
+        return data.getFile();
     }
 
     private void SetCurrentFile(TabPane tabPane,File file){
         Tab selectedTab=tabPane.getSelectionModel().getSelectedItem();
-        selectedTab.setUserData(file);
+        TabData data=getTabData(selectedTab);
+        data.setFile(file);
+        data.setModified(false);
         selectedTab.setText(file.getName());
     }
 
