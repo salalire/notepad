@@ -58,6 +58,16 @@ public class mainInterface {
         open.setOnAction(e1->{
             fileOperation.handleOpen(area,stage);
         });
+        save.setOnAction(e->{
+            fileOperation.handleSave(area,stage);
+        });
+        saveAs.setOnAction(e->{
+            fileOperation.handleSaveAs(area,stage);
+        });
+        newWindow.setOnAction(e->{
+            Stage newStage=new Stage();
+            new mainInterface().show(newStage);
+        });
 
         BorderPane borderPane=new BorderPane();
         borderPane.setTop(menuBar);

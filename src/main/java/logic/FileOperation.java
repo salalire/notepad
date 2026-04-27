@@ -9,6 +9,7 @@ import java.nio.file.Files;
 
 
 public class FileOperation {
+    private File currentFile;
     public void handleNew(TextArea textArea,Stage stage){
         textArea.clear();
     }
@@ -31,6 +32,34 @@ public class FileOperation {
     }
 
     public void handleSave(TextArea textArea,Stage stage){
+        if(currentFile==null){
+            handleSaveAs(textArea,stage);
+            return ;
+        }
+        else {
+            try {
+             Files.writeString(currentFile.toPath(),textArea.getText());
+            }
+            catch (IOException e){
+             e.printStackTrace();
+            }
+        }
 
+    }
+
+    public void handleSaveAs(TextArea textArea,Stage stage){
+        FileChooser fileChooser=new FileChooser();
+        fileChooser.setTitle("Save File");
+        File file=fileChooser.showSaveDialog(stage);
+        if (file !=null){
+           try {
+               Files.writeString(file.toPath(),textArea.getText());
+               currentFile=file;
+
+           }
+           catch (IOException e){
+               e.printStackTrace();
+           }
+        }
     }
 }
