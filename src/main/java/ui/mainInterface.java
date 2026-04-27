@@ -1,15 +1,39 @@
 package ui;
 import javafx.scene.Scene;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import logic.FileOperation;
 
+import java.io.File;
+
 public class mainInterface {
     FileOperation fileOperation=new FileOperation();
+    TabPane tabPane=new TabPane();
+    private Tab createNewTab() {
+        TextArea area = new TextArea();
+        Tab tab = new Tab("Untitled");
+        tab.setContent(area);
+        tab.setUserData(null);
+        return tab;
+    }
+
+    private TextArea getCurrentTextArea(TabPane tabPane) {
+        Tab selectedTab = tabPane.getSelectionModel().getSelectedItem();
+        return (TextArea) selectedTab.getContent();
+    }
+
+    private File getCurrentFile(TabPane tabPane){
+        Tab selectedTab=tabPane.getSelectionModel().getSelectedItem();
+        return (File) selectedTab.getUserData();
+    }
+
+    private void SetCurrentFile(TabPane tabPane,File file){
+        Tab selectedTab=tabPane.getSelectionModel().getSelectedItem();
+        selectedTab.setUserData(file);
+        selectedTab.setText(file.getName());
+    }
+
     public void show(Stage stage){
         Menu fileMenu=new Menu("File");
         Menu editMenu= new Menu("Edit");
@@ -17,6 +41,7 @@ public class mainInterface {
         MenuItem newFile=new MenuItem("New");
         MenuItem open=new MenuItem("open");
         MenuItem newWindow=new MenuItem("New Window");
+        MenuItem newTab=new MenuItem("New Tab");
         MenuItem recent = new MenuItem("recent");
         MenuItem save = new MenuItem("Save");
         MenuItem saveAs = new MenuItem("Save as");
@@ -25,7 +50,7 @@ public class mainInterface {
         MenuItem closeWindow = new MenuItem("Close Window");
         MenuItem exit = new MenuItem("Exit");
         fileMenu.getItems().addAll(
-                newFile,open, newWindow, recent, save, saveAs,saveAll,closeTab,closeWindow,exit
+                newFile,open, newWindow, newTab,recent, save, saveAs,saveAll,closeTab,closeWindow,exit
         );
        MenuItem undo=new MenuItem("Undo");
         MenuItem copy=new MenuItem("Copy");
@@ -51,27 +76,50 @@ public class mainInterface {
                 zoom,statusBar,wordWrap
         );
         MenuBar menuBar=new MenuBar(fileMenu,editMenu,viewMenu);
-        TextArea area=new TextArea();
+
         newFile.setOnAction(e->{
-            fileOperation.handleNew(area,stage);
+            TextArea currentArea = getCurrentTextArea(tabPane);
+            fileOperation.handleNew(currentArea,stage);
         });
         open.setOnAction(e1->{
-            fileOperation.handleOpen(area,stage);
+            TextArea currentArea = getCurrentTextArea(tabPane);
+            File currentFile=fileOperation.handleOpen(currentArea,stage);
+            if (currentFile!=null){
+                SetCurrentFile(tabPane,currentFile);
+
+            }
+
         });
         save.setOnAction(e->{
-            fileOperation.handleSave(area,stage);
+            TextArea currentArea = getCurrentTextArea(tabPane);
+            File file =getCurrentFile(tabPane);
+            File saved=fileOperation.handleSave(currentArea,stage,file);
+            if(saved!=null){
+                SetCurrentFile(tabPane,saved);
+            }
+
         });
         saveAs.setOnAction(e->{
-            fileOperation.handleSaveAs(area,stage);
+            TextArea currentArea = getCurrentTextArea(tabPane);
+            fileOperation.handleSaveAs(currentArea,stage);
         });
         newWindow.setOnAction(e->{
             Stage newStage=new Stage();
             new mainInterface().show(newStage);
         });
 
+        Tab firstTab = createNewTab();
+        tabPane.getTabs().add(firstTab);
+        newTab.setOnAction(e -> {
+            Tab newTab1 = createNewTab();
+            tabPane.getTabs().add(newTab1);
+            tabPane.getSelectionModel().select(newTab1);
+        });
+
+
         BorderPane borderPane=new BorderPane();
         borderPane.setTop(menuBar);
-        borderPane.setCenter(area);
+        borderPane.setCenter(tabPane);
         stage.setScene(new Scene(borderPane,600,500));
         stage.setTitle("Notepad");
         stage.show();
