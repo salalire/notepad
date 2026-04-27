@@ -6,10 +6,65 @@ import javafx.stage.Stage;
 import logic.FileOperation;
 
 import java.io.File;
+import java.util.Optional;
 
 public class mainInterface {
     FileOperation fileOperation=new FileOperation();
     TabPane tabPane=new TabPane();
+
+
+    private void handleCloseTab(TabPane tabPane, Stage stage, FileOperation fileOps) {
+
+        Tab tab = tabPane.getSelectionModel().getSelectedItem();
+        if (tab == null) return;
+
+        TabData data = (TabData) tab.getUserData();
+
+        // Case 1: Not modified → just close
+        if (!data.isModified()) {
+            tabPane.getTabs().remove(tab);
+            return;
+        }
+
+        // Case 2: Modified → show dialog
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Unsaved Changes");
+        alert.setHeaderText("You have unsaved changes.");
+        alert.setContentText("Do you want to save before closing?");
+
+        ButtonType saveBtn = new ButtonType("Save");
+        ButtonType dontSaveBtn = new ButtonType("Don't Save");
+        ButtonType cancelBtn = new ButtonType("Cancel");
+
+        alert.getButtonTypes().setAll(saveBtn, dontSaveBtn, cancelBtn);
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isEmpty()) return;
+
+        if (result.get() == saveBtn) {
+            // try saving
+            TextArea area = (TextArea) tab.getContent();
+            File file = data.getFile();
+
+            File savedFile = fileOps.handleSave(area, stage, file);
+
+            if (savedFile != null) {
+                data.setFile(savedFile);
+                data.setModified(false);
+                tab.setText(savedFile.getName());
+
+                tabPane.getTabs().remove(tab);
+            }
+
+        } else if (result.get() == dontSaveBtn) {
+            tabPane.getTabs().remove(tab);
+
+        } else {
+
+        }
+    }
+
 
     private TabData getTabData(Tab tab) {
         return (TabData) tab.getUserData();
@@ -137,6 +192,13 @@ public class mainInterface {
             tabPane.getSelectionModel().select(newTab1);
         });
 
+        undo.setOnAction(e -> {
+            TextArea area = getCurrentTextArea(tabPane);
+            area.undo();
+        });
+
+     FileOperation fileOps=new FileOperation();
+        closeTab.setOnAction(e -> handleCloseTab(tabPane, stage, fileOps));
 
         BorderPane borderPane=new BorderPane();
         borderPane.setTop(menuBar);
