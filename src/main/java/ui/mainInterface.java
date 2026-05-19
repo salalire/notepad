@@ -7,27 +7,32 @@ import logic.FileOperation;
 
 import java.io.File;
 import java.util.Optional;
+import javafx.application.Platform;
 
 public class mainInterface {
     FileOperation fileOperation=new FileOperation();
     TabPane tabPane=new TabPane();
 
 
-    private void handleCloseTab(TabPane tabPane, Stage stage, FileOperation fileOps) {
+    private boolean handleCloseTab(TabPane tabPane, Stage stage, FileOperation fileOps) {
 
         Tab tab = tabPane.getSelectionModel().getSelectedItem();
-        if (tab == null) return;
+
+        if (tab == null) {
+            return true;
+        }
 
         TabData data = (TabData) tab.getUserData();
 
-        // Case 1: Not modified → just close
         if (!data.isModified()) {
+
             tabPane.getTabs().remove(tab);
-            return;
+
+            return true;
         }
 
-        // Case 2: Modified → show dialog
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+
         alert.setTitle("Unsaved Changes");
         alert.setHeaderText("You have unsaved changes.");
         alert.setContentText("Do you want to save before closing?");
@@ -40,29 +45,61 @@ public class mainInterface {
 
         Optional<ButtonType> result = alert.showAndWait();
 
-        if (result.isEmpty()) return;
+        if (result.isEmpty()) {
+            return false;
+        }
 
         if (result.get() == saveBtn) {
-            // try saving
-            TextArea area = (TextArea) tab.getContent();
-            File file = data.getFile();
 
-            File savedFile = fileOps.handleSave(area, stage, file);
+            TextArea area = (TextArea) tab.getContent();
+
+            File currentFile = data.getFile();
+
+            File savedFile = fileOps.handleSave(area, stage, currentFile);
 
             if (savedFile != null) {
+
                 data.setFile(savedFile);
+
                 data.setModified(false);
+
                 tab.setText(savedFile.getName());
 
                 tabPane.getTabs().remove(tab);
+
+                return true;
             }
 
+            return false;
+
         } else if (result.get() == dontSaveBtn) {
+
             tabPane.getTabs().remove(tab);
+
+            return true;
 
         } else {
 
+            return false;
         }
+    }
+
+
+
+    private void handleExit(TabPane tabPane, Stage stage, FileOperation fileOps) {
+
+        while (!tabPane.getTabs().isEmpty()) {
+
+            tabPane.getSelectionModel().select(0);
+
+            boolean closed = handleCloseTab(tabPane, stage, fileOps);
+
+            if (!closed) {
+                return;
+            }
+        }
+
+        Platform.exit();
     }
 
 
@@ -197,8 +234,31 @@ public class mainInterface {
             area.undo();
         });
 
+        delete.setOnAction(e->{
+            TextArea area=getCurrentTextArea(tabPane);
+            area.replaceSelection(" ");
+        });
+
+        copy.setOnAction(e->{
+          TextArea area=getCurrentTextArea(tabPane);
+          area.copy();
+        });
+
+        cut.setOnAction(e->{
+           TextArea area=getCurrentTextArea(tabPane);
+           area.cut();
+        });
+
+        paste.setOnAction(e->{
+            TextArea area=getCurrentTextArea(tabPane);
+            area.paste();
+        });
+
      FileOperation fileOps=new FileOperation();
         closeTab.setOnAction(e -> handleCloseTab(tabPane, stage, fileOps));
+        exit.setOnAction(e->{
+            handleExit(tabPane,stage,fileOps);
+        });
 
         BorderPane borderPane=new BorderPane();
         borderPane.setTop(menuBar);
